@@ -1,0 +1,137 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import re
+
+# ---------- HEADERS (IMPORTANT) ----------
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+}
+
+# ---------- MASTER LIST FOR ALL PRODUCTS ----------
+all_products = []
+
+# ---------- SCRAPE MULTIPLE PAGES ----------
+for page in range(1, 40):  # pages 1 to 10
+    url = f"https://www.flipkart.com/search?q=laptop+under+1+lakh&page={page}"
+    r = requests.get(url, headers=headers)
+    soup = BeautifulSoup(r.content, "lxml")
+
+    products = soup.find_all("div", class_="tUxRFH")
+
+    all_products.extend(products)
+
+# ---------- FINAL CLEAN DATA LISTS ----------
+name = []
+company = []
+price = []
+star_rating = []
+num_ratings = []
+num_reviews = []
+processor = []
+ram = []
+operating_system = []
+storage = []
+display = []
+office = []
+warranty = []
+
+
+# ---------- EXTRACT DATA ----------
+for i in all_products:
+
+    # NAME
+    n = i.find("div", class_="KzDlHZ")
+    full_name = n.text.strip() if n else "N/A"
+    name.append(full_name)
+    company.append(full_name.split()[0] if full_name != "N/A" else "N/A")
+
+    # PRICE CLEAN
+    p = i.find(class_="Nx9bqj _4b5DiR")
+    price_clean = p.text.replace("₹", "").replace(",", "") if p else "N/A"
+    price.append(price_clean)
+
+    # STAR RATING
+    sr = i.find(class_="XQDdHH")
+    star_rating.append(sr.text.strip() if sr else "N/A")
+
+    # RATINGS + REVIEWS
+    rr = i.find(class_="Wphh3N")
+    if rr:
+        txt = rr.get_text(strip=True)
+        parts = txt.split("&")
+
+        # Ratings count
+        num_ratings.append(parts[0].split()[0].replace(",", ""))
+
+        # Reviews count
+        if len(parts) > 1:
+            num_reviews.append(parts[1].split()[0].replace(",", ""))
+        else:
+            num_reviews.append("N/A")
+    else:
+        num_ratings.append("N/A")
+        num_reviews.append("N/A")
+
+    # SPECS
+    specs = i.find_all("li", class_="J+igdf")
+
+    proc = ram_s = os_s = stor_s = disp_s = off_s = warr_s = "N/A"
+
+    for s in specs:
+        txt = s.text.lower()
+
+        if "processor" in txt or "ryzen" in txt or "intel" in txt:
+            proc = s.text.strip()
+
+        elif "ram" in txt:
+            ram_s = s.text.strip()
+
+        elif "operating system" in txt or "windows" in txt or "dos" in txt:
+            os_s = s.text.replace("Operating System", "").strip()
+
+        elif "ssd" in txt or "hdd" in txt:
+            m = re.search(r"(\d+)", s.text)
+            stor_s = m.group(1) if m else "N/A"
+
+        elif "inch" in txt:
+            m = re.search(r"\((\d+(?:\.\d+)?)\s*Inch\)", s.text)
+            disp_s = m.group(1) if m else "N/A"
+
+        elif "office" in txt:
+            off_s = s.text.strip()
+
+        elif "year" in txt:
+            m = re.search(r"(\d+)", s.text)
+            warr_s = m.group(1) if m else "N/A"
+
+    processor.append(proc)
+    ram.append(ram_s)
+    operating_system.append(os_s)
+    storage.append(stor_s)
+    display.append(disp_s)
+    office.append(off_s)
+    warranty.append(warr_s)
+
+
+# ---------- CREATE DATAFRAME ----------
+df = pd.DataFrame({
+    "Name": name,
+    "Company": company,
+    "Price": price,
+    "Star_Rating": star_rating,
+    "Number_of_Ratings": num_ratings,
+    "Number_of_Reviews": num_reviews,
+    "Processor": processor,
+    "RAM": ram,
+    "Operating_System": operating_system,
+    "Storage": storage,
+    "Display": display,
+    "Office": office,
+    "Warranty": warranty
+})
+
+# ---------- SAVE CSV ----------
+df.to_csv("flipkart_laptops_10_pages.csv", index=False)
+
+
