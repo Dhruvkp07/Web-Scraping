@@ -1,0 +1,21 @@
+# This dataset contains laptop listings scraped from Flipkart, one of India’s largest e-commerce platforms.
+It includes 936 laptops across multiple brands, collected from the first 10 pages of search results for “laptops under 1 lakh”.
+
+The goal of this dataset is to provide clean, structured, analysis-ready data for:
+
+Price comparison
+
+Laptop specifications analysis
+
+Trend insights
+
+Machine learning prediction tasks
+
+E-commerce research
+
+The dataset has been fully cleaned:
+✔ Prices converted to numeric
+✔ Ratings & reviews split
+✔ Storage, display size, warranty, OS cleaned
+✔ Company extracted automatically
+✔ Suitable for ML/EDA
